@@ -28,6 +28,17 @@ module "cdn" {
       }
     }
 
+    api_gw = {
+      domain_name = replace(module.api_gateway.apigatewayv2_api_api_endpoint, "/^https?://([^/]*).*/", "$1")
+
+      custom_origin_config = {
+        http_port              = 80
+        https_port             = 443
+        origin_protocol_policy = "match-viewer"
+        origin_ssl_protocols   = ["TLSv1.2"]
+      }
+    }
+
     s3_one = {
       domain_name = module.site.s3_bucket_bucket_domain_name
       s3_origin_config = {
@@ -47,6 +58,16 @@ module "cdn" {
   }
 
   ordered_cache_behavior = [
+    {
+      path_pattern           = "/poll"
+      target_origin_id       = "api_gw"
+      viewer_protocol_policy = "redirect-to-https"
+
+      allowed_methods = ["GET", "HEAD", "OPTIONS", "POST", "DELETE", "PUT", "PATCH"]
+      cached_methods  = ["GET", "HEAD"]
+      compress        = true
+      query_string    = true
+    },
     {
       path_pattern           = "*"
       target_origin_id       = "s3_one"
@@ -68,8 +89,6 @@ module "cdn" {
 }
 
 resource "aws_acm_certificate" "this" {
-  provider = aws.virginia
-
   domain_name       = local.site_domain
   validation_method = "DNS"
 

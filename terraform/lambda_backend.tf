@@ -1,74 +1,46 @@
-data "archive_file" "backend" {
-  source_file = "${path.module}/backend/backend.py"
-  output_path = "${path.module}/backend/backend.zip"
-  type        = "zip"
+locals {
+  backend_lambda_name = var.environment
 }
 
-data "aws_iam_policy" "AWSLambdaBasicExecutionRole" {
-  name = "AWSLambdaBasicExecutionRole"
-}
+module "lambda_function" {
+  source = "terraform-aws-modules/lambda/aws"
 
-data "aws_iam_policy_document" "backend_lambda_execution_role" {
-  statement {
-    actions = ["sts:AssumeRole"]
-    effect  = "Allow"
-    principals {
-      identifiers = ["lambda.amazonaws.com"]
-      type        = "Service"
-    }
-  }
-}
-
-data "aws_iam_policy_document" "backend_lambda_policy" {
-  statement {
-    actions   = ["dynamodb:*"]
-    effect    = "Allow"
-    resources = [module.backend_dynamo.dynamodb_table_arn]
-  }
-}
-
-resource "aws_iam_policy" "backend_lambda_policy" {
-  name   = "${var.environment}_backend_lambda_policy"
-  policy = data.aws_iam_policy_document.backend_lambda_policy.json
-
-  tags = var.tags
-}
-
-resource "aws_iam_role_policy_attachment" "backend_lambda_policy" {
-  role       = aws_iam_role.lambda_execution_role_backend.name
-  policy_arn = aws_iam_policy.backend_lambda_policy.arn
-}
-
-resource "aws_iam_role" "lambda_execution_role_backend" {
-  name = "${var.environment}_backend_lambda_execution_role"
-
-  assume_role_policy = data.aws_iam_policy_document.backend_lambda_execution_role.json
-
-  tags = var.tags
-}
-
-resource "aws_iam_role_policy_attachment" "backend_lambda_execution_policy" {
-  policy_arn = data.aws_iam_policy.AWSLambdaBasicExecutionRole.arn
-  role       = aws_iam_role.lambda_execution_role_backend.name
-}
-
-resource "aws_lambda_function" "backend" {
-  filename      = data.archive_file.backend.output_path
-  description   = "Store backend in DynamoDB"
-  function_name = "${var.environment}_${local.backend_name}"
-  role          = aws_iam_role.lambda_execution_role_backend.arn
-  handler       = "${local.backend_name}.lambda_handler"
+  function_name = "${var.environment}-function"
+  description   = "${var.environment} function to record data to DynamoDB"
+  handler       = "backend.lambda_handler"
+  publish       = true
   runtime       = "python3.11"
-  timeout       = 5
+  timeout       = 30
 
-  environment {
-    variables = {
-      DYNAMO_REPONDENT = module.respondent_dynamo_dynamo.dynamodb_table_id
-      DYNAMO_REPONSES  = module.responses_dynamo_dynamo.dynamodb_table_id
+  source_path = [
+    {
+      path = "${path.module}/backend"
+    }
+  ]
+
+  attach_policies = true
+  policies        = ["arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"]
+
+  attach_policy_statements = true
+  policy_statements = {
+    bedrock_invoke = {
+      effect  = "Allow",
+      actions = ["dynamodb:*"],
+      resources = [
+        module.respondent_dynamo.dynamodb_table_arn,
+        module.responses_dynamo.dynamodb_table_arn,
+      ]
+    },
+  }
+
+  allowed_triggers = {
+    AllowExecutionFromAPIGateway = {
+      service    = "apigateway"
+      source_arn = "${module.api_gateway.apigatewayv2_api_execution_arn}/*/*"
     }
   }
 
-  source_code_hash = data.archive_file.backend.output_base64sha256
+  cloudwatch_logs_retention_in_days = 3
 
   tags = var.tags
 }

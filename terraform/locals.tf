@@ -1,4 +1,6 @@
 locals {
+  backend_name = var.environment
+
   domain = "brewsentry.com"
 
   environment = replace(var.environment, "_", "-")

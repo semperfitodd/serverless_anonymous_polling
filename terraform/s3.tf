@@ -11,7 +11,7 @@ data "aws_iam_policy_document" "site" {
 }
 
 locals {
-  site_directory = "${path.module}/static_site"
+  site_directory = "${path.module}/static_site/site/build"
 
   mime_types = {
     "html" = "text/html"
