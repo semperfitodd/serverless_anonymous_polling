@@ -1,0 +1,80 @@
+.App {
+    font-family: 'Arial', sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    background-color: white;
+}
+
+h2 {
+    color: blue;
+}
+
+strong {
+    color: orange;
+}
+
+label {
+    margin: 5px;
+    display: inline-block;
+}
+
+input[type="radio"] {
+    margin-right: 5px;
+}
+
+textarea,
+input[type="radio"] {
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    border: 1px solid #d4d4d4;
+    border-radius: 5px;
+    padding: 5px;
+    transition: box-shadow 0.3s ease;
+}
+
+textarea:focus,
+input[type="radio"]:focus {
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+    outline: none;
+}
+
+textarea {
+    width: 100%;
+    max-width: 500px;
+    min-height: 80px;
+    resize: vertical;
+}
+
+button {
+    margin-top: 20px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    background-color: blue;
+    color: white;
+    cursor: pointer;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+button:disabled {
+    background-color: #bbb;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+button:hover {
+    background-color: darkblue;
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 480px) {
+    .App {
+        padding: 10px;
+    }
+
+    textarea {
+        width: 100%;
+    }
+}
