@@ -5,12 +5,17 @@ locals {
 module "lambda_function" {
   source = "terraform-aws-modules/lambda/aws"
 
-  function_name = "${var.environment}-function"
+  function_name = "${var.environment}_function"
   description   = "${var.environment} function to record data to DynamoDB"
   handler       = "backend.lambda_handler"
   publish       = true
   runtime       = "python3.11"
   timeout       = 30
+
+  environment_variables = {
+    "DYNAMO_RESPONDENT" = module.respondent_dynamo.dynamodb_table_id
+    "DYNAMO_RESPONSES"  = module.responses_dynamo.dynamodb_table_id
+  }
 
   source_path = [
     {
