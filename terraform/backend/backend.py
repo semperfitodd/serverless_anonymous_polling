@@ -1,71 +1,79 @@
-import json
 import boto3
-import os
 import hashlib
+import json
+import os
+import time
 from botocore.exceptions import ClientError
 
-# Initialize DynamoDB client
-dynamodb = boto3.resource('dynamodb')
+TTL_30_DAYS = 30 * 24 * 60 * 60
+CORS_HEADERS = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Methods": "OPTIONS,POST,GET"
+}
 
-# Table references from environment variables
+dynamodb = boto3.resource('dynamodb')
 respondent_table = dynamodb.Table(os.environ['DYNAMO_RESPONDENT'])
 responses_table = dynamodb.Table(os.environ['DYNAMO_RESPONSES'])
 
 def generate_response_id(email):
+    """Generate a unique ID based on the email."""
     return hashlib.sha256(email.encode()).hexdigest()
 
+def get_ttl_expire_time():
+    """Return the epoch time for 30 days from now."""
+    return int(time.time()) + TTL_30_DAYS
+
 def lambda_handler(event, context):
-    cors_headers = {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Headers": "Content-Type",
-        "Access-Control-Allow-Methods": "OPTIONS,POST,GET"
-    }
-
-    # Extracting the email from the query string parameters
+    # Extract data from the event
     respondent_id = event['queryStringParameters']['email']
+    body = event.get('body')
+    if not body:
+        return {
+            'statusCode': 400,
+            'body': json.dumps({'message': 'No body found in the request.'}),
+            'headers': CORS_HEADERS
+        }
 
-    # Extracting the body from the API Gateway event
-    body = json.loads(event['body'])
+    data = json.loads(body)
+    score = data.get('score')
+    feedback = data.get('feedback')
 
-    score = body['score']
-    feedback = body['feedback']
-
-    # Ensure the score is between 1 and 10
     if not (1 <= score <= 10):
         return {
             'statusCode': 400,
             'body': json.dumps({'message': 'Score should be between 1 and 10.'}),
-            'headers': cors_headers
+            'headers': CORS_HEADERS
         }
 
     try:
-        # Mark the respondent as having completed the survey
         respondent_table.put_item(
             Item={
                 'respondent_id': respondent_id,
-                'responded': True
+                'responded': True,
+                'expire': get_ttl_expire_time()
             }
         )
 
-        # Add the anonymous response to the responses table
         responses_table.put_item(
             Item={
                 'response_id': generate_response_id(respondent_id),
                 'score': score,
-                'feedback': feedback
+                'feedback': feedback,
+                'expire': get_ttl_expire_time()
             }
         )
 
         return {
             'statusCode': 200,
             'body': json.dumps({'message': 'Response recorded successfully.'}),
-            'headers': cors_headers
+            'headers': CORS_HEADERS
         }
 
-    except ClientError as e:
-        print(e.response['Error']['Message'])
+    except ClientError:
+        # logging the exact error message can be added here for further debugging
         return {
             'statusCode': 500,
             'body': json.dumps({'message': 'Error recording response.'}),
-            'headers': cors_headers
+            'headers': CORS_HEADERS
         }

@@ -1,13 +1,13 @@
 locals {
-  backend_lambda_name = var.environment
+  get_results_lambda_name = "${var.environment}_get_results"
 }
 
-module "lambda_function_backend" {
+module "lambda_function_get_results" {
   source = "terraform-aws-modules/lambda/aws"
 
-  function_name = "${local.backend_lambda_name}_function"
-  description   = "${local.backend_lambda_name} function to record data to DynamoDB"
-  handler       = "backend.lambda_handler"
+  function_name = "${local.get_results_lambda_name}_function"
+  description   = "${local.get_results_lambda_name} function to retrieve data to DynamoDB"
+  handler       = "get_results.lambda_handler"
   publish       = true
   runtime       = "python3.11"
   timeout       = 30
@@ -19,7 +19,7 @@ module "lambda_function_backend" {
 
   source_path = [
     {
-      path = "${path.module}/backend"
+      path = "${path.module}/get_results"
     }
   ]
 

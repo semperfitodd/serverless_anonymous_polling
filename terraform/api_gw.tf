@@ -11,16 +11,22 @@ module "api_gateway" {
     allow_methods = ["OPTIONS", "GET", "POST"]
   }
 
-  create_default_stage        = true
-  domain_name                 = local.site_domain
-  domain_name_certificate_arn = aws_acm_certificate.this.arn
+  create_default_stage         = true
+  domain_name                  = local.site_domain
+  domain_name_certificate_arn  = aws_acm_certificate.this.arn
 
   default_stage_access_log_destination_arn = aws_cloudwatch_log_group.api_gw.arn
 
   integrations = {
+    "GET /results" = {
+      lambda_arn = module.lambda_function_get_results.lambda_function_invoke_arn
+    },
     "POST /poll" = {
-      lambda_arn = module.lambda_function.lambda_function_invoke_arn
-    }
+      lambda_arn = module.lambda_function_backend.lambda_function_invoke_arn
+    },
+    "POST /send" = {
+      lambda_arn = module.lambda_function_send_emails.lambda_function_invoke_arn
+    },
   }
 
   tags = var.tags

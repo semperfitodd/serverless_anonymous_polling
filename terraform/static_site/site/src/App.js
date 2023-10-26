@@ -1,14 +1,20 @@
 import React, { useState } from 'react';
 import './App.css';
+import Admin from './Admin';
 
 const API_URL = '/poll';
 
 function App() {
+    const [isAdmin, setIsAdmin] = useState(false);
     const [score, setScore] = useState(null);
     const [feedback, setFeedback] = useState('');
     const [apiResponse, setApiResponse] = useState(null);
     const [submitted, setSubmitted] = useState(false);
     const email = new URLSearchParams(window.location.search).get('email');
+
+    if (isAdmin) {
+        return <Admin />;
+    }
 
     const handleSubmit = async () => {
         setSubmitted(true);
@@ -45,6 +51,7 @@ function App() {
 
     return (
         <div className="App">
+            <button onClick={() => setIsAdmin(true)}>Switch to Admin View</button>
             <h2>Poll</h2>
             <p>Your email: <strong>{email}</strong></p>
             <p>This poll is completely anonymous.</p>
