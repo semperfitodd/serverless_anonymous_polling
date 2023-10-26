@@ -9,7 +9,7 @@ This project provides a serverless solution to conduct anonymous polls. It lever
 - [Project Structure](#project-structure)
 
 ## Architecture Overview
-
+![architecture.png](images%2Farchitecture.png)
 1. **API Gateway**: Handles incoming requests and routes them to the appropriate Lambda functions.
 2. **Lambda Functions**: There are three distinct functions:
    - Backend processing
@@ -52,6 +52,8 @@ Note: Always remember to destroy the resources after testing to avoid unnecessar
     ```
 ## Project Structure
 ```bash
+├── images
+│   │   └── architecture.png - Architecture diagram
 ├── terraform
 │   ├── api_gw.tf - API Gateway configuration
 │   ├── backend
